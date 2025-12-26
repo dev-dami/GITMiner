@@ -2,6 +2,10 @@
 
 Search GitHub repositories and export their data to CSV, JSON, or Parquet.
 
+[![PyPI version](https://badge.fury.io/py/git-miner.svg)](https://pypi.org/project/git-miner/)
+[![PyPI downloads](https://img.shields.io/pypi/dm/git-miner.svg)](https://pypistats.org/api/packages/git-miner/recent?amount=5&unit=day)
+[![License](https://img.shields.io/pypi/l/git-miner.svg)](https://pypi.org/project/git-miner/)
+
 ## Installation
 
 ```bash
@@ -18,9 +22,38 @@ git-miner search "python web framework" --language python --min-stars 1000
 
 Add your GitHub token for higher rate limits:
 
+**Option 1: Using the auth command (recommended)**
+
+```bash
+git-miner auth add --token your_token
+```
+
+Your token is stored locally in `~/.cache/git-miner/tokens.db` and automatically used.
+
+**Option 2: Environment variable**
+
 ```bash
 export GITHUB_TOKEN=your_token
 git-miner search "data science" --format json
+```
+
+**Option 3: Command line flag**
+
+```bash
+git-miner search "data science" --token your_token
+```
+
+**Manage cached tokens:**
+
+```bash
+# List stored tokens
+git-miner auth list
+
+# Remove a token
+git-miner auth remove
+
+# Show a specific token
+git-miner auth show --name default
 ```
 
 ## Use Cases
@@ -33,6 +66,24 @@ git-miner search "data science" --format json
 - **Market Research**: Identify popular libraries and frameworks
 
 ## Commands
+
+### Auth
+
+Manage GitHub tokens locally:
+
+```bash
+git-miner auth list|add|remove|show [OPTIONS]
+```
+
+**Actions:**
+- `list`: Show all cached tokens
+- `add`: Store a new token
+- `remove`: Delete a token
+- `show`: Display a token value
+
+**Options:**
+- `--name, -n`: Token name (default: "default")
+- `--token, -t`: Token value (required for add)
 
 ### Search
 
@@ -96,9 +147,6 @@ git-miner extract owner/repo
 Create `gitminer.toml`:
 
 ```toml
-[github]
-token = "your_token"
-
 [output]
 dir = "./datasets"
 format = "parquet"
@@ -113,6 +161,8 @@ Use it:
 ```bash
 git-miner --config gitminer.toml search "web framework"
 ```
+
+Note: GitHub tokens are now managed via the `auth` command and stored in a local SQLite cache.
 
 ## Rate Limits
 

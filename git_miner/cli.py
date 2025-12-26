@@ -1,4 +1,5 @@
 import asyncio
+from importlib.metadata import version as get_version
 from pathlib import Path
 from typing import Any, Literal
 
@@ -11,6 +12,8 @@ from .datasets.export import DatasetExporter
 from .search.query import SearchOptions, SearchQueryBuilder
 from .token_cache import TokenCache
 
+PACKAGE_VERSION = get_version("git-miner")
+
 app = typer.Typer(
     name="git-miner",
     help="Mine GitHub repository metadata and activity data",
@@ -22,7 +25,7 @@ app = typer.Typer(
 @app.command()
 def version():
     """Show version."""
-    typer.echo("git-miner 0.1.4")
+    typer.echo(f"git-miner {PACKAGE_VERSION}")
 
 state: dict[str, Any] = {
     "token": None,

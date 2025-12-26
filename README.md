@@ -22,7 +22,7 @@ git-miner search "python web framework" --language python --min-stars 1000
 
 Add your GitHub token for higher rate limits:
 
-**Option 1: Using the auth command (recommended)**
+### Option 1: Using the auth command (recommended)
 
 ```bash
 git-miner auth add --token your_token
@@ -30,20 +30,20 @@ git-miner auth add --token your_token
 
 Your token is stored locally in `~/.cache/git-miner/tokens.db` and automatically used.
 
-**Option 2: Environment variable**
+### Option 2: Environment variable
 
 ```bash
 export GITHUB_TOKEN=your_token
 git-miner search "data science" --format json
 ```
 
-**Option 3: Command line flag**
+### Option 3: Command line flag
 
 ```bash
 git-miner search "data science" --token your_token
 ```
 
-**Manage cached tokens:**
+### Manage cached tokens
 
 ```bash
 # List stored tokens

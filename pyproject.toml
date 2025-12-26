@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "git-miner"
-version = "0.1.0"
+version = "0.2.0"
 description = "A tool for mining GitHub repository metadata and activity data"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -45,18 +45,20 @@ dev = [
 ]
 
 [project.scripts]
-git-miner = "git_miner.cli:main"
+git-miner = "git_miner.cli:app"
 
 [project.urls]
-Homepage = "https://github.com/yourusername/git-miner"
-Documentation = "https://github.com/yourusername/git-miner#readme"
-Repository = "https://github.com/yourusername/git-miner"
-Issues = "https://github.com/yourusername/git-miner/issues"
+Homepage = "https://github.com/dev-dami/GITMiner"
+Documentation = "https://github.com/dev-dami/GITMiner#readme"
+Repository = "https://github.com/dev-dami/GITMiner"
+Issues = "https://github.com/dev-dami/GITMiner/issues"
 
 [tool.ruff]
 target-version = "py311"
 line-length = 100
-lint.select = ["E", "F", "I", "N", "W", "UP", "B", "C4", "RUF"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP", "B", "C4", "RUF"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["git_miner"]

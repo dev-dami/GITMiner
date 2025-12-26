@@ -18,7 +18,6 @@ class Repository(BaseModel):
     stargazers_count: int = Field(alias="stars")
     watchers_count: int
     forks_count: int
-    fork_count: int
     open_issues_count: int
     license: dict[str, Any] | None = None
     created_at: datetime

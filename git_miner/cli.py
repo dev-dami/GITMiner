@@ -90,7 +90,7 @@ def search(
         builder.language(language)
     if min_stars or max_stars:
         builder.stars(min_stars, max_stars)
-    if min_forks or max_forks:
+    if min_forks is not None or max_forks is not None:
         builder.forks(min_forks, max_forks)
     if license:
         builder.license(license)
@@ -113,11 +113,11 @@ def search(
 async def _search_and_export(builder: SearchQueryBuilder, options: SearchOptions):
     """Async search and export."""
     client = get_client()
-    builder = DatasetBuilder(client)
+    dataset_builder = DatasetBuilder(client)
     exporter = DatasetExporter(state["output_dir"])
 
     typer.echo("Searching repositories...")
-    dataset = await builder.build_full_dataset(builder, options)
+    dataset = await dataset_builder.build_full_dataset(builder, options)
 
     typer.echo(f"Found {len(dataset['repositories'])} repositories")
 
@@ -162,12 +162,12 @@ async def _extract(query: str, include_activity: bool, include_contributors: boo
 
 @app.command()
 def export(
-    repositories_file: Path = typer.Argument(..., help="Path to repositories JSON file"),
+    repositories_file: Path = typer.Argument(..., help="Path to repositories JSON file"),  # noqa: B008
     include_activity: bool = typer.Option(
-        True, "--activity/--no-activity", help="Include activity statistics"
+        True, "--activity/--no-activity", help="Include activity statistics",
     ),
     include_contributors: bool = typer.Option(
-        True, "--contributors/--no-contributors", help="Include contributor statistics"
+        True, "--contributors/--no-contributors", help="Include contributor statistics",
     ),
 ):
     """Export datasets from existing repository list."""

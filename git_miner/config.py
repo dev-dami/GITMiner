@@ -8,7 +8,7 @@ class Config:
     """Configuration management for Git-Miner."""
 
     def __init__(self, config_path: str | Path | None = None):
-        self.config_path = Path(config_path) if config_path else None
+        self.config_path = Path(config_path) if config_path and isinstance(config_path, (str, Path)) else None
         self._config: dict[str, Any] = {}
 
         if self.config_path and self.config_path.exists():

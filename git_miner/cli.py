@@ -1,6 +1,6 @@
 import asyncio
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 import typer
 
@@ -9,6 +9,7 @@ from .config import Config
 from .datasets.builder import DatasetBuilder
 from .datasets.export import DatasetExporter
 from .search.query import SearchOptions, SearchQueryBuilder
+from .token_cache import TokenCache
 
 app = typer.Typer(
     name="git-miner",
@@ -17,7 +18,13 @@ app = typer.Typer(
     add_completion=False,
 )
 
-state = {
+
+@app.command()
+def version():
+    """Show version."""
+    typer.echo("git-miner 0.1.4")
+
+state: dict[str, Any] = {
     "token": None,
     "config": None,
     "output_dir": None,
@@ -29,6 +36,11 @@ def get_client() -> GitHubAPIClient:
     """Get configured API client."""
     config = state["config"]
     token = state["token"] or (config.github_token if config else None)
+
+    if not token:
+        cache = TokenCache()
+        token = cache.get_token("default")
+
     return GitHubAPIClient(token=token)
 
 
@@ -46,19 +58,19 @@ def main(
     """Git Miner - Mine GitHub repository metadata and activity data."""
     state["token"] = token
 
-    if config:
+    if config and isinstance(config, (str, Path)):
         state["config"] = Config(config)
         if not output_dir and state["config"]:
             output_dir = state["config"].output_dir
         if not format and state["config"]:
             format = state["config"].default_format
 
-    if output_dir:
+    if output_dir and isinstance(output_dir, (str, Path)):
         state["output_dir"] = Path(output_dir)
     else:
         state["output_dir"] = Path(".")
 
-    state["format"] = format
+    state["format"] = format if format and isinstance(format, str) else None
 
 
 @app.command()
@@ -88,7 +100,7 @@ def search(
 
     if language:
         builder.language(language)
-    if min_stars or max_stars:
+    if min_stars is not None or max_stars is not None:
         builder.stars(min_stars, max_stars)
     if min_forks is not None or max_forks is not None:
         builder.forks(min_forks, max_forks)
@@ -117,14 +129,20 @@ async def _search_and_export(builder: SearchQueryBuilder, options: SearchOptions
     exporter = DatasetExporter(state["output_dir"])
 
     typer.echo("Searching repositories...")
-    dataset = await dataset_builder.build_full_dataset(builder, options)
+    try:
+        dataset = await dataset_builder.build_full_dataset(
+            builder, options, include_activity=False, include_contributors=False
+        )
 
-    typer.echo(f"Found {len(dataset['repositories'])} repositories")
+        typer.echo(f"Found {len(dataset['repositories'])} repositories")
 
-    if state["format"]:
-        exporter.export_dataset(dataset, format=state["format"])
-    else:
-        exporter.export_dataset(dataset, format="csv")
+        if state["format"]:
+            exporter.export_dataset(dataset, format=state["format"])
+        else:
+            exporter.export_dataset(dataset, format="csv")
+    except Exception as e:
+        typer.echo(f"Error: {e}")
+        raise
 
 
 @app.command()
@@ -194,6 +212,45 @@ async def _export(repositories_file: Path, include_activity: bool, include_contr
     if include_contributors:
         contributors = await builder.build_contributor_dataset(repositories)
         exporter.export_contributor_stats(contributors, format=state["format"] or "csv")
+
+
+@app.command()
+def auth(
+    action: Literal["list", "add", "remove", "show"] = typer.Argument(..., help="Action to perform"),
+    name: str = typer.Option("default", "--name", "-n", help="Token name (for multiple tokens)"),
+    token: str = typer.Option(None, "--token", "-t", help="GitHub API token"),
+):
+    """Manage GitHub authentication tokens."""
+    cache = TokenCache()
+
+    if action == "list":
+        tokens = cache.list_tokens()
+        if not tokens:
+            typer.echo("No tokens stored in cache.")
+        else:
+            typer.echo("Stored tokens:")
+            for t in tokens:
+                typer.echo(f"  - {t['name']} (created: {t['created_at']})")
+
+    elif action == "add":
+        if not token:
+            typer.echo("Error: --token is required for add action")
+            raise typer.Exit(1)
+        cache.set_token(token, name)
+        typer.echo(f"Token '{name}' stored successfully.")
+        typer.echo("You can now use it without passing --token flag.")
+
+    elif action == "remove":
+        cache.delete_token(name)
+        typer.echo(f"Token '{name}' removed successfully.")
+
+    elif action == "show":
+        stored_token = cache.get_token(name)
+        if stored_token:
+            typer.echo(f"Token '{name}': {stored_token}")
+        else:
+            typer.echo(f"Token '{name}' not found in cache.")
+            raise typer.Exit(1)
 
 
 if __name__ == "__main__":

@@ -11,13 +11,27 @@ class StateDB:
     def __init__(self, db_path: Path | None = None):
         if db_path is None:
             db_path = Path.home() / ".cache" / "git-miner" / "state.db"
-        self.db_path = Path(db_path)
-        self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        self.db_path = db_path
+        self._is_memory = db_path == ":memory:"
+        self._conn = None
+
+        if not self._is_memory:
+            Path(db_path).parent.mkdir(parents=True, exist_ok=True)
+
         self._init_db()
+
+    def _get_connection(self):
+        """Get a database connection."""
+        if self._is_memory and self._conn is not None:
+            return self._conn
+        if self._is_memory:
+            self._conn = sqlite3.connect(":memory:", check_same_thread=False)
+            return self._conn
+        return sqlite3.connect(self.db_path)
 
     def _init_db(self):
         """Initialize SQLite database with tables."""
-        with sqlite3.connect(self.db_path) as conn:
+        with self._get_connection() as conn:
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS saved_searches (
                     name TEXT PRIMARY KEY,
@@ -28,6 +42,12 @@ class StateDB:
                 )
             """)
             conn.commit()
+
+    def close(self):
+        """Close the database connection if using in-memory database."""
+        if self._is_memory and self._conn:
+            self._conn.close()
+            self._conn = None
 
     def save_search(self, name: str, query: str, options: dict[str, Any], force: bool = False):
         """Save a search query with options.
@@ -43,7 +63,7 @@ class StateDB:
         """
         options_json = json.dumps(options, default=str)
 
-        with sqlite3.connect(self.db_path) as conn:
+        with self._get_connection() as conn:
             if not force:
                 cursor = conn.execute("SELECT name FROM saved_searches WHERE name = ?", (name,))
                 if cursor.fetchone():
@@ -64,12 +84,12 @@ class StateDB:
         """Get a saved search by name.
 
         Args:
-            name: Name of the saved search
+            name: Name of saved search
 
         Returns:
             Dictionary with query and options, or None if not found
         """
-        with sqlite3.connect(self.db_path) as conn:
+        with self._get_connection() as conn:
             cursor = conn.execute(
                 "SELECT query, options, created_at, updated_at FROM saved_searches WHERE name = ?",
                 (name,),
@@ -91,7 +111,7 @@ class StateDB:
         Returns:
             List of saved search metadata
         """
-        with sqlite3.connect(self.db_path) as conn:
+        with self._get_connection() as conn:
             cursor = conn.execute(
                 "SELECT name, query, created_at, updated_at "
                 "FROM saved_searches ORDER BY updated_at DESC"
@@ -115,7 +135,7 @@ class StateDB:
         Raises:
             ValueError: If search not found
         """
-        with sqlite3.connect(self.db_path) as conn:
+        with self._get_connection() as conn:
             cursor = conn.execute("DELETE FROM saved_searches WHERE name = ?", (name,))
             if cursor.rowcount == 0:
                 raise ValueError(f"Saved search '{name}' not found.")

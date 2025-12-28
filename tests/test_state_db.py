@@ -1,29 +1,18 @@
-import tempfile
-from pathlib import Path
-
 import pytest
 
 from git_miner.state_db import StateDB
 
 
 @pytest.fixture
-def temp_db_path():
-    """Create a temporary database path for testing."""
-    with tempfile.NamedTemporaryFile(suffix=".db", delete=False) as f:
-        db_path = Path(f.name)
-        yield db_path
-    db_path.unlink(missing_ok=True)
-
-
-@pytest.fixture
-def state_db(temp_db_path):
-    """Create a StateDB instance with a temporary database."""
-    return StateDB(db_path=temp_db_path)
+def state_db():
+    """Create a StateDB instance with in-memory database for testing."""
+    return StateDB(db_path=":memory:")
 
 
 def test_init_db(state_db):
     """Test that database is initialized correctly."""
-    assert state_db.db_path.exists()
+    assert state_db.db_path == ":memory:"
+    assert state_db._is_memory is True
 
 
 def test_save_and_get_search(state_db):

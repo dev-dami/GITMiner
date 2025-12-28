@@ -6,6 +6,7 @@ from ..extractors.activity import ActivityExtractor
 from ..extractors.contributors import ContributorExtractor
 from ..search.engine import SearchEngine
 from ..search.query import SearchOptions, SearchQueryBuilder
+from ..utils.progress import track_progress
 
 
 class DatasetBuilder:
@@ -78,7 +79,7 @@ class DatasetBuilder:
         """
         activities = []
 
-        for repo_data in repositories:
+        for repo_data in track_progress(repositories, "Extracting activity"):
             owner = repo_data["owner"]
             repo = repo_data["name"]
 
@@ -114,7 +115,7 @@ class DatasetBuilder:
         """
         contributors = []
 
-        for repo_data in repositories:
+        for repo_data in track_progress(repositories, "Extracting contributors"):
             owner = repo_data["owner"]
             repo = repo_data["name"]
 

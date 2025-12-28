@@ -102,6 +102,10 @@ git-miner search QUERY [OPTIONS]
 - `--sort`: Sort by stars, forks, or updated
 - `--max-results`: Limit number of results
 
+**Saved Searches:**
+- `--save, -s <name>`: Save search with given name
+- `--force, -f`: Overwrite existing saved search
+
 **Output:**
 - `--format, -f`: csv, json, or parquet
 - `--output-dir, -o`: Output directory
@@ -133,6 +137,41 @@ git-miner extract owner/repo
 **Options:**
 - `--activity / --no-activity`: Include commit/issue/PR stats
 - `--contributors / --no-contributors`: Include contributor stats
+
+### Searches
+
+Manage saved search queries:
+
+```bash
+git-miner searches list|run|delete|show [OPTIONS]
+```
+
+**Actions:**
+- `list`: Show all saved searches
+- `run <name>`: Execute a saved search
+- `delete <name>`: Delete a saved search
+- `show <name>`: Show details of a saved search
+
+**Examples:**
+
+```bash
+# Save a search with a name
+git-miner search "machine learning" --language python --min-stars 1000 --save ml-repos
+
+# List all saved searches
+git-miner searches list
+
+# Run a saved search
+git-miner searches run ml-repos
+
+# Show search details
+git-miner searches show ml-repos
+
+# Delete a saved search
+git-miner searches delete ml-repos
+```
+
+**Saved searches** are stored in `~/.cache/git-miner/state.db` and include the query string along with all filter options (language, stars, forks, license, topics, etc.).
 
 ## Output Formats
 

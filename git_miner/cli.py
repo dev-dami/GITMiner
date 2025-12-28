@@ -10,6 +10,7 @@ from .config import Config
 from .datasets.builder import DatasetBuilder
 from .datasets.export import DatasetExporter
 from .search.query import SearchOptions, SearchQueryBuilder
+from .state_db import StateDB
 from .token_cache import TokenCache
 
 PACKAGE_VERSION = get_version("git-miner")
@@ -20,6 +21,8 @@ app = typer.Typer(
     no_args_is_help=True,
     add_completion=False,
 )
+searches_app = typer.Typer(name="searches", help="Manage saved searches")
+app.add_typer(searches_app, name="searches")
 
 
 @app.command()
@@ -99,6 +102,8 @@ def search(
     ),
     sort: str | None = typer.Option(None, "--sort", help="Sort by (stars, forks, updated)"),
     max_results: int | None = typer.Option(None, "--max-results", help="Maximum number of results"),
+    save: str | None = typer.Option(None, "--save", "-s", help="Save search with this name"),
+    force: bool = typer.Option(False, "--force", "-f", help="Overwrite existing saved search"),
 ):
     """Search and export GitHub repositories."""
     builder = SearchQueryBuilder()
@@ -125,6 +130,28 @@ def search(
         max_results=max_results,
     )
 
+    if save:
+        state_db = StateDB()
+        search_options = {
+            "language": language,
+            "min_stars": min_stars,
+            "max_stars": max_stars,
+            "min_forks": min_forks,
+            "max_forks": max_forks,
+            "license": license,
+            "topics": topics,
+            "is_fork": is_fork,
+            "is_archived": is_archived,
+            "sort": sort,
+            "max_results": max_results,
+        }
+        try:
+            state_db.save_search(save, builder.build(), search_options, force=force)
+            typer.echo(f"Search saved as '{save}'")
+        except ValueError as e:
+            typer.echo(f"Error: {e}")
+            raise typer.Exit(1) from None
+
     asyncio.run(_search_and_export(builder, options))
 
 
@@ -149,6 +176,63 @@ async def _search_and_export(builder: SearchQueryBuilder, options: SearchOptions
     except Exception as e:
         typer.echo(f"Error: {e}")
         raise
+
+
+async def _run_search(
+    query: str,
+    language: str | None = None,
+    min_stars: int | None = None,
+    max_stars: int | None = None,
+    min_forks: int | None = None,
+    max_forks: int | None = None,
+    license: str | None = None,
+    topics: str | None = None,
+    is_fork: bool | None = None,
+    is_archived: bool | None = None,
+    sort: str | None = None,
+    max_results: int | None = None,
+):
+    """Run a search with given parameters.
+
+    Args:
+        query: Search query string
+        language: Programming language filter
+        min_stars: Minimum star count
+        max_stars: Maximum star count
+        min_forks: Minimum fork count
+        max_forks: Maximum fork count
+        license: License type filter
+        topics: Topics filter (comma-separated)
+        is_fork: Fork filter
+        is_archived: Archived filter
+        sort: Sort field
+        max_results: Maximum results
+    """
+    builder = SearchQueryBuilder()
+    builder.query(query)
+
+    if language:
+        builder.language(language)
+    if min_stars is not None or max_stars is not None:
+        builder.stars(min_stars, max_stars)
+    if min_forks is not None or max_forks is not None:
+        builder.forks(min_forks, max_forks)
+    if license:
+        builder.license(license)
+    if topics:
+        for topic in topics.split(","):
+            builder.topic(topic.strip())
+    if is_fork is not None:
+        builder.is_fork(is_fork)
+    if is_archived is not None:
+        builder.is_archived(is_archived)
+
+    options = SearchOptions(
+        sort=sort,
+        max_results=max_results,
+    )
+
+    await _search_and_export(builder, options)
 
 
 @app.command()
@@ -263,6 +347,68 @@ def auth(
         else:
             typer.echo(f"Token '{name}' not found in cache.")
             raise typer.Exit(1)
+
+
+@searches_app.command()
+def list():
+    """List all saved searches."""
+    state_db = StateDB()
+    searches = state_db.list_searches()
+
+    if not searches:
+        typer.echo("No saved searches found.")
+        return
+
+    typer.echo("Saved searches:")
+    for s in searches:
+        typer.echo(f"  - {s['name']}: {s['query']}")
+        typer.echo(f"    Created: {s['created_at']}, Updated: {s['updated_at']}")
+
+
+@searches_app.command()
+def run(name: str = typer.Argument(..., help="Name of saved search to run")):
+    """Run a saved search."""
+    state_db = StateDB()
+    saved_search = state_db.get_search(name)
+
+    if not saved_search:
+        typer.echo(f"Error: Saved search '{name}' not found.")
+        raise typer.Exit(1)
+
+    typer.echo(f"Running saved search '{name}': {saved_search['query']}")
+    asyncio.run(_run_search(query=saved_search["query"], **saved_search["options"]))
+
+
+@searches_app.command()
+def delete(name: str = typer.Argument(..., help="Name of saved search to delete")):
+    """Delete a saved search."""
+    state_db = StateDB()
+    try:
+        state_db.delete_search(name)
+        typer.echo(f"Saved search '{name}' deleted successfully.")
+    except ValueError as e:
+        typer.echo(f"Error: {e}")
+        raise typer.Exit(1) from None
+
+
+@searches_app.command()
+def show(name: str = typer.Argument(..., help="Name of saved search to show")):
+    """Show details of a saved search."""
+    state_db = StateDB()
+    saved_search = state_db.get_search(name)
+
+    if not saved_search:
+        typer.echo(f"Error: Saved search '{name}' not found.")
+        raise typer.Exit(1)
+
+    typer.echo(f"Name: {saved_search['name']}")
+    typer.echo(f"Query: {saved_search['query']}")
+    typer.echo("Options:")
+    for key, value in saved_search["options"].items():
+        if value is not None:
+            typer.echo(f"  {key}: {value}")
+    typer.echo(f"Created: {saved_search['created_at']}")
+    typer.echo(f"Updated: {saved_search['updated_at']}")
 
 
 if __name__ == "__main__":

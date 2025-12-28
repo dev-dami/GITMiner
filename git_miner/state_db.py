@@ -73,10 +73,14 @@ class StateDB:
 
             conn.execute(
                 """
-                INSERT OR REPLACE INTO saved_searches (name, query, options, updated_at)
-                VALUES (?, ?, ?, ?)
+                INSERT INTO saved_searches (name, query, options, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?)
+                ON CONFLICT(name) DO UPDATE SET
+                    query = excluded.query,
+                    options = excluded.options,
+                    updated_at = excluded.updated_at
             """,
-                (name, query, options_json, datetime.now(UTC).isoformat()),
+                (name, query, options_json, datetime.now(UTC).isoformat(), datetime.now(UTC).isoformat()),
             )
             conn.commit()
 

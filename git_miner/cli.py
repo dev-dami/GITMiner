@@ -103,7 +103,7 @@ def search(
     sort: str | None = typer.Option(None, "--sort", help="Sort by (stars, forks, updated)"),
     max_results: int | None = typer.Option(None, "--max-results", help="Maximum number of results"),
     save: str | None = typer.Option(None, "--save", "-s", help="Save search with this name"),
-    force: bool = typer.Option(False, "--force", "-f", help="Overwrite existing saved search"),
+    force: bool = typer.Option(False, "--force", help="Overwrite existing saved search"),
 ):
     """Search and export GitHub repositories."""
     builder = SearchQueryBuilder()

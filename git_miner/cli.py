@@ -27,6 +27,7 @@ def version():
     """Show version."""
     typer.echo(f"git-miner {PACKAGE_VERSION}")
 
+
 state: dict[str, Any] = {
     "token": None,
     "config": None,
@@ -66,7 +67,9 @@ def main(
         if not output_dir and state["config"]:
             output_dir = state["config"].output_dir
         if not format and state["config"]:
-            format = state["config"].default_format
+            default_fmt: str = state["config"].default_format
+            if default_fmt in ("csv", "json", "parquet"):
+                format = default_fmt  # type: ignore[assignment]
 
     if output_dir and isinstance(output_dir, (str, Path)):
         state["output_dir"] = Path(output_dir)
@@ -185,10 +188,14 @@ async def _extract(query: str, include_activity: bool, include_contributors: boo
 def export(
     repositories_file: Path = typer.Argument(..., help="Path to repositories JSON file"),  # noqa: B008
     include_activity: bool = typer.Option(
-        True, "--activity/--no-activity", help="Include activity statistics",
+        True,
+        "--activity/--no-activity",
+        help="Include activity statistics",
     ),
     include_contributors: bool = typer.Option(
-        True, "--contributors/--no-contributors", help="Include contributor statistics",
+        True,
+        "--contributors/--no-contributors",
+        help="Include contributor statistics",
     ),
 ):
     """Export datasets from existing repository list."""
@@ -219,7 +226,9 @@ async def _export(repositories_file: Path, include_activity: bool, include_contr
 
 @app.command()
 def auth(
-    action: Literal["list", "add", "remove", "show"] = typer.Argument(..., help="Action to perform"),
+    action: Literal["list", "add", "remove", "show"] = typer.Argument(
+        ..., help="Action to perform"
+    ),
     name: str = typer.Option("default", "--name", "-n", help="Token name (for multiple tokens)"),
     token: str = typer.Option(None, "--token", "-t", help="GitHub API token"),
 ):

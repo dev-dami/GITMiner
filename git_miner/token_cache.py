@@ -1,6 +1,5 @@
 import sqlite3
 from pathlib import Path
-from typing import Optional
 
 
 class TokenCache:
@@ -25,7 +24,7 @@ class TokenCache:
             """)
             conn.commit()
 
-    def get_token(self, name: str = "default") -> Optional[str]:
+    def get_token(self, name: str = "default") -> str | None:
         """Get cached token by name."""
         with sqlite3.connect(self.cache_path) as conn:
             cursor = conn.execute(

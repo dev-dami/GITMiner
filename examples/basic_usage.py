@@ -7,7 +7,7 @@ import asyncio
 from git_miner.api.client import GitHubAPIClient
 from git_miner.datasets.builder import DatasetBuilder
 from git_miner.datasets.export import DatasetExporter
-from git_miner.search.query import SearchQueryBuilder, SearchOptions
+from git_miner.search.query import SearchOptions, SearchQueryBuilder
 
 
 async def search_and_export():
@@ -63,7 +63,7 @@ async def full_dataset_example():
 
     exporter.export_dataset(dataset, format="parquet", prefix="web_frameworks")
 
-    print(f"Exported:")
+    print("Exported:")
     print(f"  - {len(dataset['repositories'])} repositories")
     print(f"  - {len(dataset.get('activities', []))} activity records")
     print(f"  - {len(dataset.get('contributors', []))} contributor records")

@@ -1,5 +1,6 @@
 import sqlite3
 from pathlib import Path
+from typing import Any
 
 
 class TokenCache:
@@ -12,7 +13,7 @@ class TokenCache:
         self.cache_path.parent.mkdir(parents=True, exist_ok=True)
         self._init_db()
 
-    def _init_db(self):
+    def _init_db(self) -> None:
         """Initialize SQLite database."""
         with sqlite3.connect(self.cache_path) as conn:
             conn.execute("""
@@ -27,29 +28,23 @@ class TokenCache:
     def get_token(self, name: str = "default") -> str | None:
         """Get cached token by name."""
         with sqlite3.connect(self.cache_path) as conn:
-            cursor = conn.execute(
-                "SELECT token FROM tokens WHERE name = ?",
-                (name,)
-            )
+            cursor = conn.execute("SELECT token FROM tokens WHERE name = ?", (name,))
             row = cursor.fetchone()
             return row[0] if row else None
 
-    def set_token(self, token: str, name: str = "default"):
+    def set_token(self, token: str, name: str = "default") -> None:
         """Store token in cache."""
         with sqlite3.connect(self.cache_path) as conn:
-            conn.execute(
-                "INSERT OR REPLACE INTO tokens (name, token) VALUES (?, ?)",
-                (name, token)
-            )
+            conn.execute("INSERT OR REPLACE INTO tokens (name, token) VALUES (?, ?)", (name, token))
             conn.commit()
 
-    def delete_token(self, name: str = "default"):
+    def delete_token(self, name: str = "default") -> None:
         """Delete token from cache."""
         with sqlite3.connect(self.cache_path) as conn:
             conn.execute("DELETE FROM tokens WHERE name = ?", (name,))
             conn.commit()
 
-    def list_tokens(self) -> list[dict]:
+    def list_tokens(self) -> list[dict[str, Any]]:
         """List all cached tokens."""
         with sqlite3.connect(self.cache_path) as conn:
             cursor = conn.execute("SELECT name, created_at FROM tokens ORDER BY created_at DESC")

@@ -1,3 +1,5 @@
+from typing import Any
+
 from ..api.models import Repository
 from .base import BaseExtractor
 
@@ -17,7 +19,7 @@ class RepositoryExtractor(BaseExtractor):
         """
         return await self.client.get_repository(owner, repo)
 
-    def from_search_result(self, repo: Repository) -> dict:
+    def from_search_result(self, repo: Repository) -> dict[str, Any]:
         """Convert search result to dictionary format.
 
         Args:

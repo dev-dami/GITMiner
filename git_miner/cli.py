@@ -26,7 +26,7 @@ app.add_typer(searches_app, name="searches")
 
 
 @app.command()
-def version():
+def version() -> None:
     """Show version."""
     typer.echo(f"git-miner {PACKAGE_VERSION}")
 
@@ -61,7 +61,7 @@ def main(
     format: Literal["csv", "json", "parquet"] | None = typer.Option(
         None, "--format", "-f", help="Export format (csv, json, parquet)"
     ),
-):
+) -> None:
     """Git Miner - Mine GitHub repository metadata and activity data."""
     state["token"] = token
 
@@ -104,7 +104,7 @@ def search(
     max_results: int | None = typer.Option(None, "--max-results", help="Maximum number of results"),
     save: str | None = typer.Option(None, "--save", "-s", help="Save search with this name"),
     force: bool = typer.Option(False, "--force", help="Overwrite existing saved search"),
-):
+) -> None:
     """Search and export GitHub repositories."""
     builder = SearchQueryBuilder()
     builder.query(query)
@@ -155,7 +155,7 @@ def search(
     asyncio.run(_search_and_export(builder, options))
 
 
-async def _search_and_export(builder: SearchQueryBuilder, options: SearchOptions):
+async def _search_and_export(builder: SearchQueryBuilder, options: SearchOptions) -> None:
     """Async search and export."""
     client = get_client()
     dataset_builder = DatasetBuilder(client)
@@ -191,7 +191,7 @@ async def _run_search(
     is_archived: bool | None = None,
     sort: str | None = None,
     max_results: int | None = None,
-):
+) -> None:
     """Run a search with given parameters.
 
     Args:
@@ -244,12 +244,12 @@ def extract(
     include_contributors: bool = typer.Option(
         True, "--contributors/--no-contributors", help="Include contributor statistics"
     ),
-):
+) -> None:
     """Extract detailed data from repositories."""
     asyncio.run(_extract(query, include_activity, include_contributors))
 
 
-async def _extract(query: str, include_activity: bool, include_contributors: bool):
+async def _extract(query: str, include_activity: bool, include_contributors: bool) -> None:
     """Async extraction."""
     client = get_client()
     builder = DatasetBuilder(client)
@@ -281,12 +281,14 @@ def export(
         "--contributors/--no-contributors",
         help="Include contributor statistics",
     ),
-):
+) -> None:
     """Export datasets from existing repository list."""
     asyncio.run(_export(repositories_file, include_activity, include_contributors))
 
 
-async def _export(repositories_file: Path, include_activity: bool, include_contributors: bool):
+async def _export(
+    repositories_file: Path, include_activity: bool, include_contributors: bool
+) -> None:
     """Async export."""
     import json
 
@@ -315,7 +317,7 @@ def auth(
     ),
     name: str = typer.Option("default", "--name", "-n", help="Token name (for multiple tokens)"),
     token: str = typer.Option(None, "--token", "-t", help="GitHub API token"),
-):
+) -> None:
     """Manage GitHub authentication tokens."""
     cache = TokenCache()
 
@@ -350,7 +352,7 @@ def auth(
 
 
 @searches_app.command()
-def list():
+def list() -> None:
     """List all saved searches."""
     state_db = StateDB()
     searches = state_db.list_searches()
@@ -366,7 +368,7 @@ def list():
 
 
 @searches_app.command()
-def run(name: str = typer.Argument(..., help="Name of saved search to run")):
+def run(name: str = typer.Argument(..., help="Name of saved search to run")) -> None:
     """Run a saved search."""
     state_db = StateDB()
     saved_search = state_db.get_search(name)
@@ -380,7 +382,7 @@ def run(name: str = typer.Argument(..., help="Name of saved search to run")):
 
 
 @searches_app.command()
-def delete(name: str = typer.Argument(..., help="Name of saved search to delete")):
+def delete(name: str = typer.Argument(..., help="Name of saved search to delete")) -> None:
     """Delete a saved search."""
     state_db = StateDB()
     try:
@@ -392,7 +394,7 @@ def delete(name: str = typer.Argument(..., help="Name of saved search to delete"
 
 
 @searches_app.command()
-def show(name: str = typer.Argument(..., help="Name of saved search to show")):
+def show(name: str = typer.Argument(..., help="Name of saved search to show")) -> None:
     """Show details of a saved search."""
     state_db = StateDB()
     saved_search = state_db.get_search(name)

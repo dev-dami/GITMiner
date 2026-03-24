@@ -4,7 +4,7 @@ from datetime import datetime
 class SearchQueryBuilder:
     """Builds GitHub repository search queries."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._terms: list[str] = []
         self._filters: list[str] = []
 

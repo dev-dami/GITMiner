@@ -1,7 +1,14 @@
+from collections.abc import Iterable
+from typing import Any
+
 from tqdm import tqdm
 
 
-def track_progress(iterable, description: str = "Processing", total: int | None = None):
+def track_progress(
+    iterable: Iterable[Any],
+    description: str = "Processing",
+    total: int | None = None,
+) -> Iterable[Any]:
     """Wrap an iterable with a progress bar.
 
     Args:
@@ -12,10 +19,11 @@ def track_progress(iterable, description: str = "Processing", total: int | None 
     Returns:
         Iterable with progress bar
     """
-    return tqdm(
+    result: Iterable[Any] = tqdm(
         iterable,
         desc=description,
         total=total,
         unit="items",
         ncols=100,
     )
+    return result

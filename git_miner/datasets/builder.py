@@ -1,4 +1,5 @@
-from datetime import datetime
+from datetime import UTC, datetime
+from typing import Any
 
 from ..api.client import GitHubAPIClient
 from ..api.models import Repository
@@ -7,12 +8,13 @@ from ..extractors.contributors import ContributorExtractor
 from ..search.engine import SearchEngine
 from ..search.query import SearchOptions, SearchQueryBuilder
 from ..utils.progress import track_progress
+from .cleaner import clean_repository_record
 
 
 class DatasetBuilder:
     """Builder for creating datasets from GitHub repositories."""
 
-    def __init__(self, client: GitHubAPIClient):
+    def __init__(self, client: GitHubAPIClient) -> None:
         self.client = client
         self.search_engine = SearchEngine(client)
         self.activity_extractor = ActivityExtractor(client)
@@ -20,7 +22,7 @@ class DatasetBuilder:
 
     async def build_repository_dataset(
         self, query: str | SearchQueryBuilder, options: SearchOptions | None = None
-    ) -> list[dict]:
+    ) -> list[dict[str, Any]]:
         """Build a repository metadata dataset.
 
         Args:
@@ -28,18 +30,17 @@ class DatasetBuilder:
             options: Search options
 
         Returns:
-            List of repository metadata dictionaries
+            List of cleaned repository metadata dictionaries
         """
+        repositories: list[Repository] = []
         if isinstance(query, SearchQueryBuilder):
-            repositories: list[Repository] = []
             async for repo in self.search_engine.search_builder(query, options):
                 repositories.append(repo)
         else:
-            repositories: list[Repository] = []
             async for repo in self.search_engine.search(query, options):
                 repositories.append(repo)
 
-        return [
+        raw_records = [
             {
                 "repository_id": repo.id,
                 "name": repo.name,
@@ -64,10 +65,11 @@ class DatasetBuilder:
             }
             for repo in repositories
         ]
+        return [clean_repository_record(r) for r in raw_records]
 
     async def build_activity_dataset(
-        self, repositories: list[dict], skip_on_error: bool = True
-    ) -> list[dict]:
+        self, repositories: list[dict[str, Any]], skip_on_error: bool = True
+    ) -> list[dict[str, Any]]:
         """Build an activity dataset from repositories.
 
         Args:
@@ -77,7 +79,7 @@ class DatasetBuilder:
         Returns:
             List of activity statistics dictionaries
         """
-        activities = []
+        activities: list[dict[str, Any]] = []
 
         for repo_data in track_progress(repositories, "Extracting activity"):
             owner = repo_data["owner"]
@@ -91,7 +93,7 @@ class DatasetBuilder:
                         "repository_id": repo_data["repository_id"],
                         "full_name": repo_data["full_name"],
                         **activity_stats,
-                        "extracted_at": datetime.utcnow().isoformat(),
+                        "extracted_at": datetime.now(UTC).isoformat(),
                     }
                 )
             except Exception as e:
@@ -102,8 +104,8 @@ class DatasetBuilder:
         return activities
 
     async def build_contributor_dataset(
-        self, repositories: list[dict], skip_on_error: bool = True
-    ) -> list[dict]:
+        self, repositories: list[dict[str, Any]], skip_on_error: bool = True
+    ) -> list[dict[str, Any]]:
         """Build a contributor dataset from repositories.
 
         Args:
@@ -113,7 +115,7 @@ class DatasetBuilder:
         Returns:
             List of contributor statistics dictionaries
         """
-        contributors = []
+        contributors: list[dict[str, Any]] = []
 
         for repo_data in track_progress(repositories, "Extracting contributors"):
             owner = repo_data["owner"]
@@ -127,7 +129,7 @@ class DatasetBuilder:
                         "repository_id": repo_data["repository_id"],
                         "full_name": repo_data["full_name"],
                         **contributor_stats,
-                        "extracted_at": datetime.utcnow().isoformat(),
+                        "extracted_at": datetime.now(UTC).isoformat(),
                     }
                 )
             except Exception as e:
@@ -144,7 +146,7 @@ class DatasetBuilder:
         include_activity: bool = True,
         include_contributors: bool = True,
         skip_on_error: bool = True,
-    ) -> dict[str, list[dict]]:
+    ) -> dict[str, list[dict[str, Any]]]:
         """Build a full dataset with all available data.
 
         Args:
@@ -159,7 +161,7 @@ class DatasetBuilder:
         """
         repositories = await self.build_repository_dataset(query, options)
 
-        result = {"repositories": repositories}
+        result: dict[str, list[dict[str, Any]]] = {"repositories": repositories}
 
         if include_activity:
             activities = await self.build_activity_dataset(repositories, skip_on_error)

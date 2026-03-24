@@ -1,18 +1,19 @@
 import sqlite3
 from pathlib import Path
+from typing import Any
 
 
 class TokenCache:
     """Local SQLite cache for GitHub tokens."""
 
-    def __init__(self, cache_path: Path | None = None):
+    def __init__(self, cache_path: Path | None = None) -> None:
         if cache_path is None:
             cache_path = Path.home() / ".cache" / "git-miner" / "tokens.db"
         self.cache_path = Path(cache_path)
         self.cache_path.parent.mkdir(parents=True, exist_ok=True)
         self._init_db()
 
-    def _init_db(self):
+    def _init_db(self) -> None:
         """Initialize SQLite database."""
         with sqlite3.connect(self.cache_path) as conn:
             conn.execute("""
@@ -34,7 +35,7 @@ class TokenCache:
             row = cursor.fetchone()
             return row[0] if row else None
 
-    def set_token(self, token: str, name: str = "default"):
+    def set_token(self, token: str, name: str = "default") -> None:
         """Store token in cache."""
         with sqlite3.connect(self.cache_path) as conn:
             conn.execute(
@@ -43,13 +44,13 @@ class TokenCache:
             )
             conn.commit()
 
-    def delete_token(self, name: str = "default"):
+    def delete_token(self, name: str = "default") -> None:
         """Delete token from cache."""
         with sqlite3.connect(self.cache_path) as conn:
             conn.execute("DELETE FROM tokens WHERE name = ?", (name,))
             conn.commit()
 
-    def list_tokens(self) -> list[dict]:
+    def list_tokens(self) -> list[dict[str, Any]]:
         """List all cached tokens."""
         with sqlite3.connect(self.cache_path) as conn:
             cursor = conn.execute("SELECT name, created_at FROM tokens ORDER BY created_at DESC")

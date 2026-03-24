@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from typing import Any
 
 from ..api.client import GitHubAPIClient
 
@@ -6,11 +7,11 @@ from ..api.client import GitHubAPIClient
 class BaseExtractor(ABC):
     """Base class for data extractors."""
 
-    def __init__(self, client: GitHubAPIClient):
+    def __init__(self, client: GitHubAPIClient) -> None:
         self.client = client
 
     @abstractmethod
-    async def extract(self, owner: str, repo: str):
+    async def extract(self, owner: str, repo: str) -> Any:
         """Extract data from the repository.
 
         Args:
@@ -20,4 +21,3 @@ class BaseExtractor(ABC):
         Returns:
             Extracted data (specific to each extractor)
         """
-        pass

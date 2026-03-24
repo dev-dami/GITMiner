@@ -7,7 +7,7 @@ import toml
 class Config:
     """Configuration management for Git-Miner."""
 
-    def __init__(self, config_path: str | Path | None = None):
+    def __init__(self, config_path: str | Path | None = None) -> None:
         self.config_path = (
             Path(config_path) if config_path and isinstance(config_path, (str, Path)) else None
         )
@@ -16,7 +16,7 @@ class Config:
         if self.config_path and self.config_path.exists():
             self.load()
 
-    def load(self):
+    def load(self) -> None:
         """Load configuration from file."""
         if not self.config_path:
             raise ValueError("No config path specified")
@@ -35,7 +35,7 @@ class Config:
             Configuration value
         """
         keys = key.split(".")
-        value = self._config
+        value: Any = self._config
 
         for k in keys:
             if isinstance(value, dict) and k in value:
@@ -45,7 +45,7 @@ class Config:
 
         return value
 
-    def set(self, key: str, value: Any):
+    def set(self, key: str, value: Any) -> None:
         """Set configuration value.
 
         Args:
@@ -53,7 +53,7 @@ class Config:
             value: Value to set
         """
         keys = key.split(".")
-        config = self._config
+        config: dict[str, Any] = self._config
 
         for k in keys[:-1]:
             if k not in config:
@@ -62,7 +62,7 @@ class Config:
 
         config[keys[-1]] = value
 
-    def save(self):
+    def save(self) -> None:
         """Save configuration to file."""
         if not self.config_path:
             raise ValueError("No config path specified")
@@ -72,40 +72,40 @@ class Config:
 
     @property
     def github_token(self) -> str | None:
-        return self.get("github.token")
+        return self.get("github.token")  # type: ignore[no-any-return]
 
     @github_token.setter
-    def github_token(self, value: str):
+    def github_token(self, value: str) -> None:
         self.set("github.token", value)
 
     @property
     def output_dir(self) -> str:
-        return self.get("output.dir", ".")
+        return self.get("output.dir", ".")  # type: ignore[no-any-return]
 
     @output_dir.setter
-    def output_dir(self, value: str):
+    def output_dir(self, value: str) -> None:
         self.set("output.dir", value)
 
     @property
     def default_format(self) -> str:
-        return self.get("output.format", "csv")
+        return self.get("output.format", "csv")  # type: ignore[no-any-return]
 
     @default_format.setter
-    def default_format(self, value: str):
+    def default_format(self, value: str) -> None:
         self.set("output.format", value)
 
     @property
     def max_retries(self) -> int:
-        return self.get("api.max_retries", 3)
+        return self.get("api.max_retries", 3)  # type: ignore[no-any-return]
 
     @max_retries.setter
-    def max_retries(self, value: int):
+    def max_retries(self, value: int) -> None:
         self.set("api.max_retries", value)
 
     @property
     def timeout(self) -> float:
-        return self.get("api.timeout", 30.0)
+        return self.get("api.timeout", 30.0)  # type: ignore[no-any-return]
 
     @timeout.setter
-    def timeout(self, value: float):
+    def timeout(self, value: float) -> None:
         self.set("api.timeout", value)

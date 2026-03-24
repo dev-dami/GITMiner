@@ -8,19 +8,19 @@ from typing import Any
 class StateDB:
     """SQLite database for saving application state (saved searches, etc.)."""
 
-    def __init__(self, db_path: Path | None = None):
+    def __init__(self, db_path: Path | str | None = None) -> None:
         if db_path is None:
             db_path = Path.home() / ".cache" / "git-miner" / "state.db"
-        self.db_path = db_path
+        self.db_path: Path | str = db_path
         self._is_memory = db_path == ":memory:"
-        self._conn = None
+        self._conn: sqlite3.Connection | None = None
 
         if not self._is_memory:
             Path(db_path).parent.mkdir(parents=True, exist_ok=True)
 
         self._init_db()
 
-    def _get_connection(self):
+    def _get_connection(self) -> sqlite3.Connection:
         """Get a database connection."""
         if self._is_memory and self._conn is not None:
             return self._conn
@@ -29,7 +29,7 @@ class StateDB:
             return self._conn
         return sqlite3.connect(self.db_path)
 
-    def _init_db(self):
+    def _init_db(self) -> None:
         """Initialize SQLite database with tables."""
         with self._get_connection() as conn:
             conn.execute("""
@@ -43,13 +43,15 @@ class StateDB:
             """)
             conn.commit()
 
-    def close(self):
+    def close(self) -> None:
         """Close the database connection if using in-memory database."""
         if self._is_memory and self._conn:
             self._conn.close()
             self._conn = None
 
-    def save_search(self, name: str, query: str, options: dict[str, Any], force: bool = False):
+    def save_search(
+        self, name: str, query: str, options: dict[str, Any], force: bool = False
+    ) -> None:
         """Save a search query with options.
 
         Args:
@@ -62,6 +64,7 @@ class StateDB:
             ValueError: If search already exists and force is False
         """
         options_json = json.dumps(options, default=str)
+        now = datetime.now(UTC).isoformat()
 
         with self._get_connection() as conn:
             if not force:
@@ -80,7 +83,7 @@ class StateDB:
                     options = excluded.options,
                     updated_at = excluded.updated_at
             """,
-                (name, query, options_json, datetime.now(UTC).isoformat(), datetime.now(UTC).isoformat()),
+                (name, query, options_json, now, now),
             )
             conn.commit()
 
@@ -130,7 +133,7 @@ class StateDB:
                 for row in cursor.fetchall()
             ]
 
-    def delete_search(self, name: str):
+    def delete_search(self, name: str) -> None:
         """Delete a saved search.
 
         Args:

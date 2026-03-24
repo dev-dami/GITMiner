@@ -29,7 +29,7 @@ class GitHubAPIClient:
         base_url: str = GITHUB_API_BASE_URL,
         timeout: float = DEFAULT_TIMEOUT,
         max_retries: int = MAX_RETRIES,
-    ):
+    ) -> None:
         self.token = token
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
@@ -39,15 +39,15 @@ class GitHubAPIClient:
         self._remaining = self._rate_limit
         self._reset_at: float = 0
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> "GitHubAPIClient":
         await self._ensure_client()
         return self
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         if self._client:
             await self._client.aclose()
 
-    async def _ensure_client(self):
+    async def _ensure_client(self) -> None:
         if self._client is None:
             self._client = httpx.AsyncClient(timeout=self.timeout)
 
@@ -60,7 +60,7 @@ class GitHubAPIClient:
             headers["Authorization"] = f"Bearer {self.token}"
         return headers
 
-    async def _check_rate_limit(self, response: httpx.Response):
+    async def _check_rate_limit(self, response: httpx.Response) -> None:
         self._remaining = int(response.headers.get("X-RateLimit-Remaining", 0))
         self._reset_at = int(response.headers.get("X-RateLimit-Reset", 0))
 
@@ -78,13 +78,14 @@ class GitHubAPIClient:
         endpoint: str,
         params: dict[str, Any] | None = None,
         json: dict[str, Any] | None = None,
-    ) -> dict[str, Any]:
+    ) -> Any:
         await self._ensure_client()
 
+        assert self._client is not None
         url = f"{self.base_url}/{endpoint.lstrip('/')}"
         headers = self._get_headers()
 
-        last_error = None
+        last_error: Exception | None = None
         for attempt in range(self.max_retries):
             try:
                 response = await self._client.request(
@@ -121,11 +122,12 @@ class GitHubAPIClient:
             raise last_error
         raise GitHubAPIError(f"Request failed after {self.max_retries} attempts")
 
-    async def get(self, endpoint: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
+    async def get(self, endpoint: str, params: dict[str, Any] | None = None) -> Any:
         return await self._request("GET", endpoint, params=params)
 
     async def post(self, endpoint: str, json: dict[str, Any]) -> dict[str, Any]:
-        return await self._request("POST", endpoint, json=json)
+        result: dict[str, Any] = await self._request("POST", endpoint, json=json)
+        return result
 
     async def search_repositories(
         self,
@@ -135,41 +137,46 @@ class GitHubAPIClient:
         per_page: int = 100,
         page: int = 1,
     ) -> dict[str, Any]:
-        params = {"q": query, "page": page, "per_page": per_page, "order": order}
+        params: dict[str, Any] = {"q": query, "page": page, "per_page": per_page, "order": order}
         if sort:
             params["sort"] = sort
-        return await self.get("/search/repositories", params=params)
+        result: dict[str, Any] = await self.get("/search/repositories", params=params)
+        return result
 
     async def get_repository(self, owner: str, repo: str) -> Repository:
-        data = await self.get(f"/repos/{owner}/{repo}")
+        data: dict[str, Any] = await self.get(f"/repos/{owner}/{repo}")
         return Repository(**data)
 
     async def get_commits(
         self, owner: str, repo: str, per_page: int = 100, page: int = 1
     ) -> list[dict[str, Any]]:
-        return await self.get(
+        result: list[dict[str, Any]] = await self.get(
             f"/repos/{owner}/{repo}/commits", params={"per_page": per_page, "page": page}
         )
+        return result
 
     async def get_contributors(
         self, owner: str, repo: str, per_page: int = 100, page: int = 1
     ) -> list[dict[str, Any]]:
-        return await self.get(
+        result: list[dict[str, Any]] = await self.get(
             f"/repos/{owner}/{repo}/contributors", params={"per_page": per_page, "page": page}
         )
+        return result
 
     async def get_issues(
         self, owner: str, repo: str, state: str = "open", per_page: int = 100, page: int = 1
     ) -> list[dict[str, Any]]:
-        return await self.get(
+        result: list[dict[str, Any]] = await self.get(
             f"/repos/{owner}/{repo}/issues",
             params={"state": state, "per_page": per_page, "page": page},
         )
+        return result
 
     async def get_pull_requests(
         self, owner: str, repo: str, state: str = "open", per_page: int = 100, page: int = 1
     ) -> list[dict[str, Any]]:
-        return await self.get(
+        result: list[dict[str, Any]] = await self.get(
             f"/repos/{owner}/{repo}/pulls",
             params={"state": state, "per_page": per_page, "page": page},
         )
+        return result
